@@ -18,7 +18,6 @@ public class ClientTest {
 
     static {
         // OCEAN_URL = "ws://message.1688.com/websocket";
-        /*OCEAN_URL = "ws://kepler-msg.jd.com/websocket";*/
 
         if(URI_WEBSOCKET == null) {
             synchronized(ClientTest.class) {
