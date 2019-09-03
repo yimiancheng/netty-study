@@ -71,11 +71,11 @@ public class Request {
         putHeadersAndCookies(nettyHttpRequest);
         putIp(ctx);
 
-        putUriParam(uri);
+        putUriParam(uri);//get
 
         if(nettyHttpRequest.method() != HttpMethod.GET) {
-            if(!StringUtils.startsWithIgnoreCase(this.contentType,
-                HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED.toString()))
+            if(!StringUtils.startsWithIgnoreCase(this.contentType, HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED.toString()) && //post put delete
+                !StringUtils.startsWithIgnoreCase(this.contentType, HttpHeaderValues.MULTIPART_FORM_DATA.toString())) //文件上传
             {
                 getContentStr();
             }
@@ -165,6 +165,7 @@ public class Request {
         }
         finally {
             postRequestDecoder.cleanFiles();
+            postRequestDecoder = null;
             // postRequestDecoder.destroy(); refCnt: 0, decrement: 1
         }
 
