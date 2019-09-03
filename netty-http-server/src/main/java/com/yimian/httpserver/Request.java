@@ -152,7 +152,7 @@ public class Request {
 
                         if(fileUpload.isCompleted()) {
                             try {
-
+                                // fileUpload.renameTo();
                             }
                             catch(Exception ex) {
                                 LOG.error("Get file param [{}] error!", data.getName(), ex);
