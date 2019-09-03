@@ -11,14 +11,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
-import io.netty.handler.codec.http.multipart.Attribute;
-import io.netty.handler.codec.http.multipart.FileUpload;
-import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
-import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import io.netty.handler.codec.http.multipart.*;
 import io.netty.util.CharsetUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
@@ -52,10 +50,14 @@ public class Request {
     //keep alive(Connection != close && keep-alive && 1.1) HttpVersion.HTTP_1_0.text()
     private boolean isKeepAlive;
     private String httpVersion;
+    private String contentType;
+    private String bodyContent;
 
     private Map<String, String> headers = new HashMap<String, String>();
     private Map<String, Object> params = new HashMap<String, Object>();
     private Map<String, Cookie> cookies = new HashMap<String, Cookie>();
+
+    protected final static DefaultHttpDataFactory HTTP_DATA_FACTORY = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE);
 
     private Request(HttpRequest nettyHttpRequest, ChannelHandlerContext ctx) {
         this.nettyHttpRequest = nettyHttpRequest;
@@ -72,10 +74,15 @@ public class Request {
         putUriParam(uri);
 
         if(nettyHttpRequest.method() != HttpMethod.GET) {
-            // getContentStr();//测试代码
-            putContentParam(this.nettyHttpRequest);
+            if(!StringUtils.startsWithIgnoreCase(this.contentType,
+                HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED.toString()))
+            {
+                getContentStr();
+            }
+            else {
+                putContentParam(this.nettyHttpRequest);
+            }
         }
-
     }
 
     private void getContentStr() {
@@ -89,13 +96,15 @@ public class Request {
                 content.readBytes(bytes);
 
                 try {
-                    String body = new String(bytes, CharsetUtil.UTF_8.name());
-                    LOG.info("body: " + body);
+                    this.bodyContent = new String(bytes, CharsetUtil.UTF_8.name());
                 }
                 catch(Exception ex) {
-                    LOG.info("error-body: " + new String(bytes), ex);
+                    this.bodyContent = new String(bytes);
+                    LOG.info("error-body: " + this.bodyContent, ex);
                 }
-
+                finally {
+                    // content.readerIndex(0);
+                }
             }
         }
     }
@@ -118,7 +127,7 @@ public class Request {
     }
 
     private void putContentParam(HttpRequest nettyHttpRequest) {
-        HttpPostRequestDecoder postRequestDecoder = new HttpPostRequestDecoder(nettyHttpRequest);
+        HttpPostRequestDecoder postRequestDecoder = new HttpPostRequestDecoder(HTTP_DATA_FACTORY, nettyHttpRequest);
 
         try {
             LOG.info("参数个数 size = {}",postRequestDecoder.getBodyHttpDatas().size());
@@ -143,7 +152,7 @@ public class Request {
 
                         if(fileUpload.isCompleted()) {
                             try {
-                                params.put(data.getName(), fileUpload.getFile());
+
                             }
                             catch(Exception ex) {
                                 LOG.error("Get file param [{}] error!", data.getName(), ex);
@@ -155,7 +164,8 @@ public class Request {
             }
         }
         finally {
-            //postRequestDecoder.destroy();
+            postRequestDecoder.cleanFiles();
+            // postRequestDecoder.destroy(); refCnt: 0, decrement: 1
         }
 
     }
@@ -185,7 +195,8 @@ public class Request {
      */
     private void putHeadersAndCookies(HttpRequest nettyHttpRequest) {
         HttpHeaders httpHeaders = nettyHttpRequest.headers();
-        final String cookieString = HttpHeaderNames.COOKIE.toString();
+        String cookieString = HttpHeaderNames.COOKIE.toString();
+        String contentTypeString = HttpHeaderNames.CONTENT_TYPE.toString();
 
         for(Map.Entry<String, String> entry : httpHeaders) {
             if(StringUtils.equalsIgnoreCase(cookieString, entry.getKey())) {
@@ -196,6 +207,10 @@ public class Request {
                 }
 
                 continue;
+            }
+            else if(StringUtils.equalsIgnoreCase(contentTypeString, entry.getKey())) {
+                String[] arrays = entry.getValue().split(";");
+                this.contentType = arrays[0];
             }
 
             this.headers.put(entry.getKey(), entry.getValue());
@@ -298,6 +313,22 @@ public class Request {
         }
 
         return false;
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
+
+    public String getBodyContent() {
+        return bodyContent;
+    }
+
+    public void setBodyContent(String bodyContent) {
+        this.bodyContent = bodyContent;
     }
 
     public String getParam(String name) {
