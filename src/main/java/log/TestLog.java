@@ -14,5 +14,7 @@ public class TestLog {
     public static void main(String[] args) {
         LOG.debug("DEBUG 日志");
         LOG.error("ERROR 日志");
+        System.out.println(String.format("服务器异常【%s】", "===="));
+
     }
 }

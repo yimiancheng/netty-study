@@ -8,7 +8,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
@@ -36,7 +35,7 @@ public class CustomUrlHandler extends SimpleChannelInboundHandler<FullHttpReques
             Map<String, String> parameters = HttpHelper.parseParameters(parts.getQuery());
             LOG.info("------ 请求连接的parameters {}", JSON.toJSON(parameters));
 
-            if(!parameters.containsKey("hua")) {
+            if(parameters.containsKey("test")) {
                 LOG.info("------ 请求连接的uri非法");
                 close(channel);
             }

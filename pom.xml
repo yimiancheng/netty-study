@@ -12,6 +12,7 @@
         <module>netty-util</module>
         <module>netty-websocket-server</module>
         <module>netty-websocket-client</module>
+        <module>netty-http-server</module>
     </modules>
 
     <dependencies>
@@ -31,6 +32,12 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>19.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>4.6.1</version>
         </dependency>
 
         <dependency>
