@@ -164,9 +164,8 @@ public class Request {
             }
         }
         finally {
-            postRequestDecoder.cleanFiles();
+            postRequestDecoder.destroy();
             postRequestDecoder = null;
-            // postRequestDecoder.destroy(); refCnt: 0, decrement: 1
         }
 
     }
